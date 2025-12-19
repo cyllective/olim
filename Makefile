@@ -1,12 +1,10 @@
-TAG=${shell git describe --tags}
-
 .PHONY: make
 make:
 	CGO_ENABLED=0 GOOS=linux \
 	go build \
 		-buildmode=pie \
 		-ldflags="-s -w \
-			-X main.version=@${TAG}" \
+			-X main.version=@`git describe --tags --abbrev=0`" \
 		-o ./onetim3 ./main.go
 
 .PHONY: lint
@@ -23,10 +21,10 @@ updatepackages:
 
 .PHONY: docker-image
 docker-image:
-	docker build --build-arg TAG=${TAG} --tag ghcr.io/cyllective/onetim3:${TAG} .
-	docker build --build-arg TAG=${TAG} --tag ghcr.io/cyllective/onetim3:latest .
+	docker build --tag ghcr.io/cyllective/onetim3:${shell git describe --tags --abbrev=0} .
+	docker build --tag ghcr.io/cyllective/onetim3:latest .
 
 .PHONY: docker-push
 docker-push:
-	docker push ghcr.io/cyllective/onetim3:${TAG}
+	docker push ghcr.io/cyllective/onetim3:${shell git describe --tags --abbrev=0}
 	docker push ghcr.io/cyllective/onetim3:latest

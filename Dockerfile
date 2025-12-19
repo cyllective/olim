@@ -1,5 +1,3 @@
-ARG TAG="DEV"
-
 FROM golang:1.25.0-alpine AS build
 
 RUN wget "https://github.com/upx/upx/releases/download/v5.0.2/upx-5.0.2-amd64_linux.tar.xz" -q -O /tmp/upx.tar.xz && \
