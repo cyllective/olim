@@ -1,0 +1,175 @@
+{{ define "view" }} {{ template "header" . }}
+
+<div id="start-button" class="full-width pad border button">Decrypt Secret</div>
+
+<div id="secret-output" class="full-width pad border hidden"></div>
+
+<div class="flexcontainer">
+  <div id="copy-output-button" class="full-width pad border button hidden">Copy</div>
+  <div id="download-button" class="full-width pad border button hidden">Download File</div>
+</div>
+
+<script>
+  const startButton = document.getElementById("start-button");
+  const secretOutput = document.getElementById("secret-output");
+  const copyOutputButton = document.getElementById("copy-output-button");
+  const downloadButton = document.getElementById("download-button");
+
+  let decryptedFileName = null;
+  let decryptedBlob = null;
+
+  // Parse URL anchor
+  function parseAnchor() {
+    const anchor = window.location.hash.substring(1); // Remove #
+    if (!anchor) {
+      showError("Invalid link: missing secret data");
+      return null;
+    }
+
+    try {
+      let base64 = anchor.replace(/-/g, "+").replace(/_/g, "/");
+
+      while (base64.length % 4) {
+        base64 += "=";
+      }
+
+      const jsonString = atob(base64);
+      const anchorData = JSON.parse(jsonString);
+
+      const { uuid, type, key, iv, nameIV } = anchorData;
+
+      if (!uuid || !type || !key || !iv) {
+        showError("Invalid link: incomplete data");
+        return null;
+      }
+
+      if (type !== "text" && type !== "file") {
+        showError("Invalid link: unknown type");
+        return null;
+      }
+
+      return { uuid, type, key, iv, nameIV };
+    } catch (error) {
+      showError("Invalid link format: " + error.message);
+      return null;
+    }
+  }
+
+  // Handle decrypt button click
+  startButton.addEventListener("click", async () => {
+    hideError();
+
+    const params = parseAnchor();
+    if (!params) return;
+
+    try {
+      startButton.textContent = "Decrypting...";
+      startButton.style.cursor = "wait";
+      startButton.disabled = true;
+
+      if (params.type === "text") {
+        await handleTextDecryption(params);
+      } else {
+        await handleFileDecryption(params);
+      }
+    } catch (error) {
+      showError("Decryption failed: " + error.message);
+    }
+  });
+
+  // Handle text decryption
+  async function handleTextDecryption({ uuid, key, iv }) {
+    const response = await fetch(`/api/string/fetch/${uuid}`);
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error("Secret not found or already viewed");
+      }
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Server error");
+    }
+
+    const data = await response.json();
+
+    const decryptedBuffer = await decryptData(key, iv, data.content);
+    const decryptedText = new TextDecoder().decode(decryptedBuffer);
+
+    secretOutput.textContent = decryptedText;
+    secretOutput.classList.remove("hidden");
+    startButton.classList.add("hidden");
+    copyOutputButton.classList.remove("hidden");
+  }
+
+  // Handle file decryption
+  async function handleFileDecryption({ uuid, key, iv, nameIV }) {
+    if (!nameIV) {
+      throw new Error("Invalid file link: missing filename IV");
+    }
+
+    const response = await fetch(`/api/file/fetch/${uuid}`);
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error("Secret not found or already viewed");
+      }
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Server error");
+    }
+
+    const data = await response.json();
+
+    const decryptedNameBuffer = await decryptData(key, nameIV, data.name);
+    decryptedFileName = new TextDecoder().decode(decryptedNameBuffer);
+
+    const decryptedContentBuffer = await decryptData(key, iv, data.content);
+    decryptedBlob = new Blob([decryptedContentBuffer]);
+
+    const fileSize = Math.round(decryptedBlob.size / 1024);
+    secretOutput.textContent = `Filename: ${decryptedFileName}\nSize: ${fileSize}KB`;
+    secretOutput.classList.remove("hidden");
+    startButton.classList.add("hidden");
+    downloadButton.classList.remove("hidden");
+  }
+
+  // Handle copy button for text
+  copyOutputButton.addEventListener("click", () => {
+    const text = secretOutput.textContent;
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        const originalText = copyOutputButton.textContent;
+        copyOutputButton.textContent = "Copied!";
+        setTimeout(() => {
+          copyOutputButton.textContent = originalText;
+        }, 2000);
+      })
+      .catch(() => {
+        showError("Failed to copy to clipboard");
+      });
+  });
+
+  // Handle download button for files
+  downloadButton.addEventListener("click", () => {
+    if (!decryptedBlob || !decryptedFileName) {
+      showError("No file available for download");
+      return;
+    }
+
+    const url = URL.createObjectURL(decryptedBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = decryptedFileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    const originalText = downloadButton.textContent;
+    downloadButton.textContent = "Downloaded!";
+    setTimeout(() => {
+      downloadButton.textContent = originalText;
+    }, 2000);
+  });
+</script>
+
+{{ template "footer" . }} {{ end }}

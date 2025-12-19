@@ -1,0 +1,182 @@
+{{ define "new" }} {{ template "header" . }}
+
+<textarea id="secret-input" class="full-width pad border" placeholder="Paste your text here or press CTRL+x to open a file (up to 1MB)"></textarea>
+<input id="secret-file-input" type="file" class="hidden" />
+<div id="link-output" class="full-width pad border hidden"></div>
+
+<div class="flexcontainer">
+  <select id="expire-select" class="full-width pad16 border">
+    <option value="1">Expire in 1h</option>
+    <option value="8">Expire in 8h</option>
+    <option value="24">Expire in 24h (1 day)</option>
+    <option value="48">Expire in 48h (2 days)</option>
+    <option value="72">Expire in 72h (3 days)</option>
+  </select>
+  <div id="submit-button" class="full-width pad border button">Encrypt</div>
+  <div id="copy-button" class="full-width pad border button hidden">Copy Link</div>
+</div>
+
+<script>
+  const secretInput = document.getElementById("secret-input");
+  const fileInput = document.getElementById("secret-file-input");
+  const linkOutput = document.getElementById("link-output");
+  const expireSelect = document.getElementById("expire-select");
+  const submitButton = document.getElementById("submit-button");
+  const copyButton = document.getElementById("copy-button");
+
+  let selectedFile = null;
+
+  // Handle CTRL+X to open file picker
+  secretInput.addEventListener("keydown", (e) => {
+    if (e.ctrlKey && e.key === "x") {
+      e.preventDefault();
+      fileInput.click();
+    }
+  });
+
+  // Handle file selection
+  fileInput.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 1024 * 1024) {
+      showError("File size must be less than 1MB");
+      return;
+    }
+
+    selectedFile = file;
+    secretInput.value = `Selected ${file.name} (${Math.round(file.size / 1024)}KB)`;
+    secretInput.disabled = true;
+  });
+
+  // Handle submit button click
+  submitButton.addEventListener("click", async () => {
+    hideError();
+
+    try {
+      submitButton.textContent = "Encrypting...";
+      submitButton.style.cursor = "wait";
+
+      const expireHours = parseInt(expireSelect.value);
+
+      if (selectedFile) {
+        await handleFileEncryption(selectedFile, expireHours);
+      } else {
+        const text = secretInput.value.trim();
+        if (!text) {
+          showError("Please enter some text or select a file");
+          return;
+        }
+        await handleTextEncryption(text, expireHours);
+      }
+    } catch (error) {
+      showError(error.message);
+    }
+  });
+
+  // Handle text encryption
+  async function handleTextEncryption(text, expireHours) {
+    const key = await generateKey();
+    const keyHex = await exportKeyAsHex(key);
+    const { encrypted, iv } = await encryptData(key, text);
+
+    const response = await fetch("/api/string/new", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        content: encrypted,
+        expire_hours: expireHours,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Server error");
+    }
+
+    const data = await response.json();
+
+    createShareLink(data.id, "text", keyHex, iv);
+  }
+
+  // Handle file encryption
+  async function handleFileEncryption(file, expireHours) {
+    // Read file as ArrayBuffer
+    const fileBuffer = await file.arrayBuffer();
+
+    const key = await generateKey();
+    const keyHex = await exportKeyAsHex(key);
+    const { encrypted: encryptedContent, iv: contentIV } = await encryptData(key, fileBuffer);
+    const { encrypted: encryptedName, iv: nameIV } = await encryptData(key, file.name);
+
+    const response = await fetch("/api/file/new", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: encryptedName,
+        content: encryptedContent,
+        expire_hours: expireHours,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Server error");
+    }
+
+    const data = await response.json();
+
+    createShareLink(data.id, "file", keyHex, contentIV, nameIV);
+  }
+
+  // Create and display share link
+  function createShareLink(uuid, type, key, iv, nameIV = null) {
+    const anchorData = {
+      uuid: uuid,
+      type: type,
+      key: key,
+      iv: iv,
+    };
+
+    if (nameIV) {
+      anchorData.nameIV = nameIV;
+    }
+
+    const jsonString = JSON.stringify(anchorData);
+    const base64Encoded = btoa(jsonString);
+    const urlSafeBase64 = base64Encoded.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+
+    const baseUrl = window.location.origin + "/view";
+    const shareUrl = baseUrl + "#" + urlSafeBase64;
+
+    linkOutput.textContent = shareUrl;
+    linkOutput.classList.remove("hidden");
+    copyButton.classList.remove("hidden");
+    secretInput.classList.add("hidden");
+    expireSelect.classList.add("hidden");
+    submitButton.classList.add("hidden");
+  }
+
+  // Handle copy button
+  copyButton.addEventListener("click", () => {
+    navigator.clipboard
+      .writeText(linkOutput.textContent.trim())
+      .then(() => {
+        linkOutput.style.opacity = "0.6";
+        const originalText = copyButton.textContent;
+        copyButton.textContent = "Copied!";
+        setTimeout(() => {
+          copyButton.textContent = originalText;
+        }, 2000);
+      })
+      .catch(() => {
+        showError("Failed to copy to clipboard");
+      });
+  });
+</script>
+
+{{ template "footer" . }} {{ end }}

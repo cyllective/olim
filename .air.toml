@@ -1,0 +1,17 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+	full_bin = "DEBUG=1 ./tmp/main"
+	include_ext = ["go", "tmpl", "css", "js"]
+
+[proxy]
+  enabled = true
+  proxy_port = 8081
+  app_port = 8080
+
+[misc]
+	clean_on_exit = true
+
+[screen]
+	clear_on_rebuild = true

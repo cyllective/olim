@@ -1,0 +1,143 @@
+:root {
+  --foreground-color: #fff;
+  --background-color: #000;
+  --accent-color: #e63c3c;
+}
+
+* {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: monospace;
+  color: var(--foreground-color);
+  background-color: var(--background-color);
+  max-width: 70ch;
+  padding: 3em 1em;
+  margin: auto;
+  line-height: 1.75;
+  font-size: 1.25em;
+}
+
+header {
+  margin: 1em auto;
+  text-align: center;
+}
+
+body {
+  max-height: 40em;
+}
+
+main {
+  margin: 2em auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+
+a,
+a:visited,
+a:active {
+  color: var(--foreground-color);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--accent-color);
+  text-decoration: underline;
+}
+
+select {
+  font-family: monospace;
+}
+
+input[type="file"] {
+  display: none;
+}
+
+textarea:disabled {
+  background-color: var(--foreground-color);
+}
+
+.button {
+  color: var(--foreground-color);
+  background-color: var(--accent-color);
+  font-family: monospace;
+  display: block;
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.border {
+  border-color: transparent;
+  border-radius: 5px;
+}
+
+.hidden {
+  display: none;
+}
+
+.full-width {
+  width: -moz-available;
+  width: -webkit-fill-available;
+  white-space: break-spaces;
+}
+
+.pad {
+  padding: 1em;
+}
+
+.pad16 {
+  padding: 1.6em;
+}
+
+.flexcontainer {
+  display: flex;
+  gap: 1em;
+  align-items: center;
+}
+
+#site-title-link,
+#site-title-link:visited,
+#site-title-link:active,
+#site-title-link:hover {
+  text-decoration: none;
+}
+
+#site-title {
+  font-size: 60%;
+  color: var(--accent-color);
+  font-weight: bold;
+  white-space: pre;
+  margin: 0 auto;
+  max-width: max-content;
+}
+
+#error-message {
+  display: none;
+  color: var(--accent-color);
+  background-color: var(--foreground-color);
+  font-family: monospace;
+}
+
+#secret-input,
+#secret-output,
+#link-output {
+  font-size: 80%;
+  color: var(--background-color);
+  height: 12em;
+}
+
+#secret-output,
+#link-output {
+  height: auto;
+  min-height: 12em;
+  background-color: var(--foreground-color);
+}
+
+#link-output {
+  word-wrap: break-word;
+}

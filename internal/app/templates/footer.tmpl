@@ -1,0 +1,20 @@
+{{ define "footer" }}
+		</main>
+		<script>
+			function showError(message) {
+				const errorDiv = document.getElementById("error-message");
+				errorDiv.textContent = message;
+				errorDiv.style.display = "block";
+			}
+
+			function hideError() {
+				document.getElementById("error-message").style.display = "none";
+			}
+
+			if (!(window.crypto && window.crypto.subtle)) {
+				showError("The Web Crypto API is not accessible in this browser");
+			}
+		</script>
+	</body>
+</html>
+{{ end }}

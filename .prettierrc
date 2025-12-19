@@ -1,0 +1,12 @@
+{
+  "printWidth": 9999,
+  "htmlWhitespaceSensitivity": "ignore",
+  "overrides": [
+    {
+      "files": "*.tmpl",
+      "options": {
+        "parser": "html"
+      }
+    }
+  ]
+}

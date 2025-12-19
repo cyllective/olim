@@ -1,0 +1,11 @@
+services:
+  onetim3:
+    image: ghcr.io/cyllective/onetim3:latest
+    restart: unless-stopped
+    environment:
+      - DB_PATH=/data/onetim3.sqlite
+    #  - DEBUG=1
+    volumes:
+      - ./onetim3_data:/data
+    ports:
+      - 127.0.0.1:8080:8080
