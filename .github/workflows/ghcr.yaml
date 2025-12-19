@@ -1,6 +1,7 @@
 name: Build and Deploy Image to GHCR
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - v*
