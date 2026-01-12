@@ -29,7 +29,7 @@ type Database struct {
 func MustOpen() *Database {
 	dbPath, exists := os.LookupEnv("DB_PATH")
 	if !exists {
-		dbPath = "./onetim3.sqlite" // default path
+		dbPath = "./olim.sqlite" // default path
 	}
 	log.Debug("using sqlite database %s", dbPath)
 

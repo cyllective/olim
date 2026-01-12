@@ -5,7 +5,7 @@ make:
 		-buildmode=pie \
 		-ldflags="-s -w \
 			-X main.version=@`git describe --tags --abbrev=0`" \
-		-o ./onetim3 ./main.go
+		-o ./olim ./main.go
 
 .PHONY: lint
 lint:
@@ -21,10 +21,10 @@ updatepackages:
 
 .PHONY: docker-image
 docker-image:
-	docker build --tag ghcr.io/cyllective/onetim3:${shell git describe --tags --abbrev=0} .
-	docker build --tag ghcr.io/cyllective/onetim3:latest .
+	docker build --tag ghcr.io/cyllective/olim:${shell git describe --tags --abbrev=0} .
+	docker build --tag ghcr.io/cyllective/olim:latest .
 
 .PHONY: docker-push
 docker-push:
-	docker push ghcr.io/cyllective/onetim3:${shell git describe --tags --abbrev=0}
-	docker push ghcr.io/cyllective/onetim3:latest
+	docker push ghcr.io/cyllective/olim:${shell git describe --tags --abbrev=0}
+	docker push ghcr.io/cyllective/olim:latest

@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 
-	"github.com/cyllective/onetim3/internal/db"
+	"github.com/cyllective/olim/internal/db"
 )
 
 // GET /

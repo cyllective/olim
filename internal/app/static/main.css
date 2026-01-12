@@ -22,8 +22,15 @@ html {
 }
 
 header {
-  margin: 1em auto;
+  margin: 0 auto;
   text-align: center;
+}
+
+footer {
+  border-top: #2e2e2e solid 1px;
+  margin: 1em auto;
+  font-size: 12px;
+  text-align: right;
 }
 
 body {
@@ -31,7 +38,7 @@ body {
 }
 
 main {
-  margin: 2em auto;
+  margin: 1em auto;
   display: flex;
   flex-direction: column;
   gap: 1em;
@@ -108,7 +115,7 @@ textarea:disabled {
 }
 
 #site-title {
-  font-size: 60%;
+  font-size: 80%;
   color: var(--accent-color);
   font-weight: bold;
   white-space: pre;

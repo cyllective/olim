@@ -1,11 +1,11 @@
 services:
-  onetim3:
-    image: ghcr.io/cyllective/onetim3:latest
+  olim:
+    image: ghcr.io/cyllective/olim:latest
     restart: unless-stopped
     environment:
-      - DB_PATH=/data/onetim3.sqlite
+      - DB_PATH=/data/olim.sqlite
     #  - DEBUG=1
     volumes:
-      - ./onetim3_data:/data
+      - ./olim_data:/data
     ports:
       - 127.0.0.1:8080:8080

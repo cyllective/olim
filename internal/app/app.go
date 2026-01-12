@@ -13,7 +13,7 @@ import (
 	logger "github.com/rtfmkiesel/kisslog"
 	"golang.org/x/time/rate"
 
-	"github.com/cyllective/onetim3/internal/db"
+	"github.com/cyllective/olim/internal/db"
 )
 
 var (

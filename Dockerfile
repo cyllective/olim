@@ -24,12 +24,12 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
 	--mount=type=cache,target="/root/.cache/go-build" \
 	make
 
-RUN /tmp/upx --no-color -q --best -o /src/bin/onetim3 /src/onetim3
+RUN /tmp/upx --no-color -q --best -o /src/bin/olim /src/olim
 
 FROM alpine:latest
 
-COPY --from=build /src/bin/onetim3 /onetim3
+COPY --from=build /src/bin/olim /olim
 
 EXPOSE 8080
 
-ENTRYPOINT ["/onetim3"]
+ENTRYPOINT ["/olim"]

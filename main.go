@@ -7,13 +7,13 @@ import (
 
 	logger "github.com/rtfmkiesel/kisslog"
 
-	"github.com/cyllective/onetim3/internal/app"
+	"github.com/cyllective/olim/internal/app"
 )
 
 var version = "@DEV"
 
 func main() {
-	if err := logger.InitDefault("github.com/cyllective/onetim3" + version); err != nil {
+	if err := logger.InitDefault("github.com/cyllective/olim" + version); err != nil {
 		panic(err)
 	}
 
