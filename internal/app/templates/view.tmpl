@@ -74,8 +74,20 @@
       }
     } catch (error) {
       showError("Decryption failed: " + error.message);
+      startButton.style.display = "none";
     }
   });
+
+  function revealOutput() {
+    secretOutput.style.opacity = "0";
+    secretOutput.classList.remove("hidden");
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        secretOutput.style.transition = "opacity 0.3s ease";
+        secretOutput.style.opacity = "1";
+      }),
+    );
+  }
 
   // Handle text decryption
   async function handleTextDecryption({ uuid, key, iv }) {
@@ -94,9 +106,9 @@
     const decryptedBuffer = await decryptData(key, iv, data.content);
     const decryptedText = new TextDecoder().decode(decryptedBuffer);
 
-    secretOutput.textContent = decryptedText;
-    secretOutput.classList.remove("hidden");
     startButton.classList.add("hidden");
+    secretOutput.textContent = decryptedText;
+    revealOutput();
     copyOutputButton.classList.remove("hidden");
   }
 
@@ -124,10 +136,10 @@
     const decryptedContentBuffer = await decryptData(key, iv, data.content);
     decryptedBlob = new Blob([decryptedContentBuffer]);
 
+    startButton.classList.add("hidden");
     const fileSize = Math.round(decryptedBlob.size / 1024);
     secretOutput.textContent = `Filename: ${decryptedFileName}\nSize: ${fileSize}KB`;
-    secretOutput.classList.remove("hidden");
-    startButton.classList.add("hidden");
+    revealOutput();
     downloadButton.classList.remove("hidden");
   }
 

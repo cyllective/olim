@@ -138,47 +138,102 @@
 
   // Create and display share link
   function createShareLink(uuid, type, key, iv, nameIV = null) {
-    const anchorData = {
-      uuid: uuid,
-      type: type,
-      key: key,
-      iv: iv,
-    };
-
-    if (nameIV) {
-      anchorData.nameIV = nameIV;
-    }
-
+    const anchorData = { uuid, type, key, iv };
+    if (nameIV) anchorData.nameIV = nameIV;
     const jsonString = JSON.stringify(anchorData);
     const base64Encoded = btoa(jsonString);
     const urlSafeBase64 = base64Encoded.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+    finalUrl = window.location.origin + "/view#" + urlSafeBase64;
 
-    const baseUrl = window.location.origin + "/view";
-    const shareUrl = baseUrl + "#" + urlSafeBase64;
+    expireSelect.remove();
+    submitButton.remove();
+    secretInput.classList.add("collapsing");
 
-    linkOutput.textContent = shareUrl;
-    linkOutput.classList.remove("hidden");
-    copyButton.classList.remove("hidden");
-    secretInput.classList.add("hidden");
-    expireSelect.classList.add("hidden");
-    submitButton.classList.add("hidden");
+    setTimeout(() => {
+      secretInput.classList.add("hidden");
+
+      copyButton.classList.remove("hidden");
+      copyButton.classList.add("scrambling");
+      copyButton.textContent = "";
+
+      const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+      // Only animate a short excerpt of the URL
+      const target = finalUrl.slice(-24); // just the last 24 chars (the unique hash)
+      const totalDuration = 1000;
+      const charDelay = totalDuration / target.length;
+      let resolved = 0;
+
+      function scrambleStep() {
+        if (resolved >= target.length) {
+          const finalText = "Copy Link";
+          let currentLen = target.length;
+          const steps = currentLen - finalText.length;
+          const stepDelay = 500 / steps;
+
+          const shrinkInterval = setInterval(() => {
+            currentLen--;
+            let display = "";
+            for (let i = 0; i < currentLen; i++) {
+              display += CHARS[Math.floor(Math.random() * CHARS.length)];
+            }
+            copyButton.textContent = display;
+
+            if (currentLen <= finalText.length) {
+              clearInterval(shrinkInterval);
+              copyButton.classList.remove("scrambling");
+              copyButton.classList.add("ready");
+              copyButton.style.direction = "";
+              copyButton.textContent = finalText;
+            }
+          }, stepDelay);
+          return;
+        }
+
+        let display = target.slice(0, resolved);
+        for (let i = resolved; i < target.length; i++) {
+          display += CHARS[Math.floor(Math.random() * CHARS.length)];
+        }
+        copyButton.textContent = display;
+
+        for (let t = 1; t < 3; t++) {
+          setTimeout(
+            () => {
+              if (resolved < target.length) {
+                let mid = target.slice(0, resolved);
+                for (let i = resolved; i < target.length; i++) {
+                  mid += CHARS[Math.floor(Math.random() * CHARS.length)];
+                }
+                copyButton.textContent = mid;
+              }
+            },
+            charDelay * (t / 3),
+          );
+        }
+
+        setTimeout(() => {
+          resolved++;
+          scrambleStep();
+        }, charDelay);
+      }
+
+      setTimeout(scrambleStep, 80);
+    }, 300);
   }
 
   // Handle copy button
   copyButton.addEventListener("click", () => {
+    if (!copyButton.classList.contains("ready")) return;
     navigator.clipboard
-      .writeText(linkOutput.textContent.trim())
+      .writeText(finalUrl)
       .then(() => {
-        linkOutput.style.opacity = "0.6";
-        const originalText = copyButton.textContent;
+        copyButton.classList.add("copied");
         copyButton.textContent = "Copied!";
         setTimeout(() => {
-          copyButton.textContent = originalText;
+          copyButton.classList.remove("copied");
+          copyButton.textContent = "Copy Link";
         }, 2000);
       })
-      .catch(() => {
-        showError("Failed to copy to clipboard");
-      });
+      .catch(() => showError("Failed to copy to clipboard"));
   });
 </script>
 

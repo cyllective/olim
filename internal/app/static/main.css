@@ -23,14 +23,9 @@ html {
 
 header {
   margin: 0 auto;
-  text-align: center;
-}
-
-footer {
-  border-top: #2e2e2e solid 1px;
-  margin: 1em auto;
-  font-size: 12px;
   text-align: right;
+  border-bottom: #2e2e2e solid 1px;
+  font-size: 12px;
 }
 
 body {
@@ -115,12 +110,11 @@ textarea:disabled {
 }
 
 #site-title {
-  font-size: 80%;
+  text-align: center;
+  font-size: 20px;
   color: var(--accent-color);
-  font-weight: bold;
   white-space: pre;
   margin: 0 auto;
-  max-width: max-content;
   line-height: 1;
 }
 
@@ -148,4 +142,68 @@ textarea:disabled {
 
 #link-output {
   word-wrap: break-word;
+}
+
+#secret-input {
+  color: var(--background-color);
+  background-color: var(--foreground-color);
+  transition:
+    opacity 0.2s ease,
+    max-height 0.3s ease,
+    padding 0.3s ease,
+    margin 0.3s ease;
+  max-height: 20em;
+  overflow: hidden;
+}
+
+#secret-input.collapsing {
+  opacity: 0;
+  max-height: 0;
+  padding: 0;
+  margin: 0;
+  pointer-events: none;
+}
+
+#expire-select {
+  transition:
+    opacity 0.15s ease,
+    max-height 0.3s ease,
+    padding 0.3s ease;
+  max-height: 5em;
+  overflow: hidden;
+}
+
+#submit-button {
+  transition: opacity 0.15s ease;
+}
+
+#copy-button {
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    opacity 0.2s ease;
+  overflow: hidden;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  width: 100%;
+  box-sizing: border-box;
+  opacity: 0;
+}
+
+#copy-button.scrambling {
+  text-align: center;
+  background-color: var(--background-color);
+  color: var(--accent-color);
+  cursor: wait;
+  direction: rtl;
+  text-overflow: clip;
+  opacity: 1;
+}
+
+#copy-button.ready {
+  background-color: var(--accent-color);
+  color: var(--foreground-color);
+  cursor: pointer;
+  letter-spacing: normal;
+  opacity: 1;
 }
