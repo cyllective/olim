@@ -27,7 +27,7 @@ func getPageView(c echo.Context) error {
 
 type newSecretStringRequest struct {
 	Content     string `json:"content" validate:"required,base64"`
-	ExpireHours int    `json:"expire_hours" validate:"required,oneof=1 8 24 48 72"`
+	ExpireHours int    `json:"expire_hours" validate:"required,oneof=1 8 24 48 72 120 192 720"`
 }
 
 // POST /api/string/new
