@@ -6,7 +6,7 @@ require (
 	github.com/glebarez/sqlite v1.11.0
 	github.com/go-playground/validator/v10 v10.30.1
 	github.com/google/uuid v1.6.0
-	github.com/labstack/echo/v4 v4.15.0
+	github.com/labstack/echo/v4 v4.15.1
 	github.com/rs/zerolog v1.34.0
 	golang.org/x/time v0.14.0
 	gorm.io/gorm v1.31.1
