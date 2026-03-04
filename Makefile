@@ -19,8 +19,7 @@ updatepackages:
 
 .PHONY: docker-image
 docker-image:
-	docker build --tag ghcr.io/cyllective/olim:${shell git describe --tags --abbrev=0} .
-	docker build --tag ghcr.io/cyllective/olim:latest .
+	docker build --tag ghcr.io/cyllective/olim:${shell git describe --tags --abbrev=0} --tag ghcr.io/cyllective/olim:latest .
 
 .PHONY: docker-push
 docker-push:
