@@ -27,7 +27,11 @@
   const submitButton = document.getElementById("submit-button");
   const copyButton = document.getElementById("copy-button");
 
+  // Minimum duration (ms) the scramble animation plays before resolving
+  const MIN_SCRAMBLE_DURATION = 2000;
+
   let selectedFile = null;
+  let finalUrl = null;
 
   // Handle CTRL+X to open file picker
   secretInput.addEventListener("keydown", (e) => {
@@ -62,22 +66,26 @@
 
       const expireHours = parseInt(expireSelect.value);
 
+      // Start upload in background, get a promise for the final URL
+      let uploadPromise;
       if (selectedFile) {
-        await handleFileEncryption(selectedFile, expireHours);
+        uploadPromise = handleFileEncryption(selectedFile, expireHours);
       } else {
         const text = secretInput.value.trim();
         if (!text) {
           showError("Please enter some text or select a file");
           return;
         }
-        await handleTextEncryption(text, expireHours);
+        uploadPromise = handleTextEncryption(text, expireHours);
       }
+
+      startScrambleAnimation(uploadPromise);
     } catch (error) {
       showError(error.message);
     }
   });
 
-  // Handle text encryption
+  // Handle text encryption — returns the final share URL
   async function handleTextEncryption(text, expireHours) {
     const key = await generateKey();
     const keyHex = await exportKeyAsHex(key);
@@ -85,13 +93,8 @@
 
     const response = await fetch("/api/string/new", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        content: encrypted,
-        expire_hours: expireHours,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: encrypted, expire_hours: expireHours }),
     });
 
     if (!response.ok) {
@@ -100,13 +103,11 @@
     }
 
     const data = await response.json();
-
-    createShareLink(data.id, "text", keyHex, iv);
+    return buildShareUrl(data.id, "text", keyHex, iv);
   }
 
-  // Handle file encryption
+  // Handle file encryption — returns the final share URL
   async function handleFileEncryption(file, expireHours) {
-    // Read file as ArrayBuffer
     const fileBuffer = await file.arrayBuffer();
 
     const key = await generateKey();
@@ -116,9 +117,7 @@
 
     const response = await fetch("/api/file/new", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: encryptedName,
         content: encryptedContent,
@@ -132,65 +131,51 @@
     }
 
     const data = await response.json();
-
-    createShareLink(data.id, "file", keyHex, contentIV, nameIV);
+    return buildShareUrl(data.id, "file", keyHex, contentIV, nameIV);
   }
 
-  // Create and display share link
-  function createShareLink(uuid, type, key, iv, nameIV = null) {
+  function buildShareUrl(uuid, type, key, iv, nameIV = null) {
     const anchorData = { uuid, type, key, iv };
     if (nameIV) anchorData.nameIV = nameIV;
     const jsonString = JSON.stringify(anchorData);
     const base64Encoded = btoa(jsonString);
     const urlSafeBase64 = base64Encoded.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-    finalUrl = window.location.origin + "/view#" + urlSafeBase64;
+    return window.location.origin + "/view#" + urlSafeBase64;
+  }
 
+  // Start scramble animation immediately; wait for both animation minimum
+  // duration AND uploadPromise before enabling the copy button.
+  function startScrambleAnimation(uploadPromise) {
     expireSelect.remove();
     submitButton.remove();
     secretInput.classList.add("collapsing");
 
+    const minDelayPromise = new Promise((resolve) => setTimeout(resolve, MIN_SCRAMBLE_DURATION));
+
+    // Both must complete before we enable copy
+    const readyPromise = Promise.all([uploadPromise, minDelayPromise]);
+
     setTimeout(() => {
       secretInput.classList.add("hidden");
-
       copyButton.classList.remove("hidden");
       copyButton.classList.add("scrambling");
       copyButton.textContent = "";
 
       const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-      // Only animate a short excerpt of the URL
-      const target = finalUrl.slice(-24); // just the last 24 chars (the unique hash)
-      const totalDuration = 1000;
-      const charDelay = totalDuration / target.length;
+      const PLACEHOLDER_LEN = 24; // chars to scramble while waiting
+      const totalDuration = MIN_SCRAMBLE_DURATION - 300; // account for collapse delay
+      const charDelay = totalDuration / PLACEHOLDER_LEN;
       let resolved = 0;
 
+      // Phase 1: reveal chars one by one up to PLACEHOLDER_LEN
       function scrambleStep() {
-        if (resolved >= target.length) {
-          const finalText = "Copy Link";
-          let currentLen = target.length;
-          const steps = currentLen - finalText.length;
-          const stepDelay = 500 / steps;
-
-          const shrinkInterval = setInterval(() => {
-            currentLen--;
-            let display = "";
-            for (let i = 0; i < currentLen; i++) {
-              display += CHARS[Math.floor(Math.random() * CHARS.length)];
-            }
-            copyButton.textContent = display;
-
-            if (currentLen <= finalText.length) {
-              clearInterval(shrinkInterval);
-              copyButton.classList.remove("scrambling");
-              copyButton.classList.add("ready");
-              copyButton.style.direction = "";
-              copyButton.textContent = finalText;
-            }
-          }, stepDelay);
+        if (resolved >= PLACEHOLDER_LEN) {
+          flickerLoop();
           return;
         }
 
-        let display = target.slice(0, resolved);
-        for (let i = resolved; i < target.length; i++) {
+        let display = "";
+        for (let i = 0; i < PLACEHOLDER_LEN; i++) {
           display += CHARS[Math.floor(Math.random() * CHARS.length)];
         }
         copyButton.textContent = display;
@@ -198,9 +183,9 @@
         for (let t = 1; t < 3; t++) {
           setTimeout(
             () => {
-              if (resolved < target.length) {
-                let mid = target.slice(0, resolved);
-                for (let i = resolved; i < target.length; i++) {
+              if (resolved < PLACEHOLDER_LEN) {
+                let mid = "";
+                for (let i = 0; i < PLACEHOLDER_LEN; i++) {
                   mid += CHARS[Math.floor(Math.random() * CHARS.length)];
                 }
                 copyButton.textContent = mid;
@@ -216,8 +201,65 @@
         }, charDelay);
       }
 
+      // Phase 2: keep flickering all chars until readyPromise resolves
+      let flickering = false;
+      function flickerLoop() {
+        if (flickering) return;
+        flickering = true;
+
+        let done = false;
+        readyPromise
+          .then(([url]) => {
+            finalUrl = url;
+            done = true;
+          })
+          .catch((err) => {
+            showError(err.message);
+            copyButton.classList.add("hidden");
+            done = true;
+          });
+
+        function tick() {
+          if (done) {
+            if (finalUrl) transitionToReady();
+            return;
+          }
+          let display = "";
+          for (let i = 0; i < PLACEHOLDER_LEN; i++) {
+            display += CHARS[Math.floor(Math.random() * CHARS.length)];
+          }
+          copyButton.textContent = display;
+          setTimeout(tick, charDelay);
+        }
+        tick();
+      }
+
       setTimeout(scrambleStep, 80);
     }, 300);
+  }
+
+  // Shrink the scrambled text down to "Copy Link"
+  function transitionToReady() {
+    const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    const finalText = "Copy Link";
+    let currentLen = 24;
+    const stepDelay = 500 / (currentLen - finalText.length);
+
+    const shrinkInterval = setInterval(() => {
+      currentLen--;
+      let display = "";
+      for (let i = 0; i < currentLen; i++) {
+        display += CHARS[Math.floor(Math.random() * CHARS.length)];
+      }
+      copyButton.textContent = display;
+
+      if (currentLen <= finalText.length) {
+        clearInterval(shrinkInterval);
+        copyButton.classList.remove("scrambling");
+        copyButton.classList.add("ready");
+        copyButton.textContent = finalText;
+      }
+    }, stepDelay);
   }
 
   // Handle copy button
