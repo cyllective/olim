@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog/log"
 
 	"github.com/cyllective/olim/internal/db"
 )
@@ -38,18 +39,18 @@ func postStringNew(c echo.Context) error {
 
 	var req newSecretStringRequest
 	if err := c.Bind(&req); err != nil {
-		log.Warning("new secret string request binding failed: %s", err)
+		log.Warn().Msgf("new secret string request binding failed: %s", err)
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "bad request"})
 	}
 
 	if err := c.Validate(req); err != nil {
-		log.Warning("new secret string request validation failed: %s", err)
+		log.Warn().Msgf("new secret string request validation failed: %s", err)
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "bad request"})
 	}
 
 	bytes, err := base64.StdEncoding.DecodeString(req.Content)
 	if err != nil {
-		log.Error("could not decode base64 request content '%s': %s", req.Content, err)
+		log.Error().Msgf("could not decode base64 request content '%s': %s", req.Content, err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "bad request"})
 	}
 
@@ -62,11 +63,11 @@ func postStringNew(c echo.Context) error {
 	}
 
 	if err := database.AddSecretString(secret); err != nil {
-		log.Error("adding entry to db failed: %s", err)
+		log.Error().Msgf("adding entry to db failed: %s", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "could not create db entry"})
 	}
 
-	log.Info("created new string entry %s", secret.ID)
+	log.Info().Msgf("created new string entry %s", secret.ID)
 	return c.JSON(http.StatusOK, map[string]string{"id": secret.ID})
 }
 
@@ -80,21 +81,21 @@ type fetchSecretStringRequest struct {
 func getStringFetch(c echo.Context) error {
 	var req fetchSecretStringRequest
 	if err := c.Bind(&req); err != nil {
-		log.Warning("fetch secret string request binding failed: %s", err)
+		log.Warn().Msgf("fetch secret string request binding failed: %s", err)
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "bad request"})
 	}
 
 	if err := c.Validate(req); err != nil {
-		log.Warning("fetch secret string request validation failed: %s", err)
+		log.Warn().Msgf("fetch secret string request validation failed: %s", err)
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "bad request"})
 	}
 
 	secret, err := database.GetAndDeleteSecretStringByID(req.ID)
 	if err != nil {
-		log.Warning("getting secret string %s from db failed: %s", req.ID, err)
+		log.Warn().Msgf("getting secret string %s from db failed: %s", req.ID, err)
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "secret not found or already viewed"})
 	}
-	log.Info("fetched and deleted string entry %s", secret.ID)
+	log.Info().Msgf("fetched and deleted string entry %s", secret.ID)
 
 	b64secret := base64.StdEncoding.EncodeToString(secret.Value)
 
@@ -115,24 +116,24 @@ func postFileNew(c echo.Context) error {
 
 	var req newSecretFileRequest
 	if err := c.Bind(&req); err != nil {
-		log.Warning("new secret file request binding failed: %s", err)
+		log.Warn().Msgf("new secret file request binding failed: %s", err)
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "bad request"})
 	}
 
 	if err := c.Validate(req); err != nil {
-		log.Warning("new secret file request validation failed: %s", err)
+		log.Warn().Msgf("new secret file request validation failed: %s", err)
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "bad request"})
 	}
 
 	nameBytes, err := base64.StdEncoding.DecodeString(req.Name)
 	if err != nil {
-		log.Error("could not decode base64 request name '%s': %s", req.Name, err)
+		log.Error().Msgf("could not decode base64 request name '%s': %s", req.Name, err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "bad request"})
 	}
 
 	contentBytes, err := base64.StdEncoding.DecodeString(req.Content)
 	if err != nil {
-		log.Error("could not decode base64 request content '%s': %s", req.Content, err)
+		log.Error().Msgf("could not decode base64 request content '%s': %s", req.Content, err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "bad request"})
 	}
 
@@ -146,12 +147,12 @@ func postFileNew(c echo.Context) error {
 	}
 
 	if err := database.AddSecretFile(secret); err != nil {
-		log.Error("adding entry to db failed: %s", err)
+		log.Error().Msgf("adding entry to db failed: %s", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "could not create db entry"})
 
 	}
 
-	log.Info("created new file entry %s", secret.ID)
+	log.Info().Msgf("created new file entry %s", secret.ID)
 	return c.JSON(http.StatusOK, map[string]string{"id": secret.ID})
 }
 
@@ -165,21 +166,21 @@ type fetchSecretFileRequest struct {
 func getFileFetch(c echo.Context) error {
 	var req fetchSecretFileRequest
 	if err := c.Bind(&req); err != nil {
-		log.Warning("fetch secret file request binding failed: %s", err)
+		log.Warn().Msgf("fetch secret file request binding failed: %s", err)
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "bad request"})
 	}
 
 	if err := c.Validate(req); err != nil {
-		log.Warning("fetch secret file request validation failed: %s", err)
+		log.Warn().Msgf("fetch secret file request validation failed: %s", err)
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "bad request"})
 	}
 
 	secret, err := database.GetAndDeleteSecretFileByID(req.ID)
 	if err != nil {
-		log.Warning("getting secret file %s from db failed: %s", req.ID, err)
+		log.Warn().Msgf("getting secret file %s from db failed: %s", req.ID, err)
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "secret not found or already viewed"})
 	}
-	log.Info("fetched and deleted file entry %s", secret.ID)
+	log.Info().Msgf("fetched and deleted file entry %s", secret.ID)
 
 	b64name := base64.StdEncoding.EncodeToString([]byte(secret.Name))
 	b64content := base64.StdEncoding.EncodeToString(secret.Value)

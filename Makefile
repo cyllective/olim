@@ -3,8 +3,7 @@ make:
 	CGO_ENABLED=0 GOOS=linux \
 	go build \
 		-buildmode=pie \
-		-ldflags="-s -w \
-			-X main.version=@`git describe --tags --abbrev=0`" \
+		-ldflags="-s -w" \
 		-o ./olim ./main.go
 
 .PHONY: lint

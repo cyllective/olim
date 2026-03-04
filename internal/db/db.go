@@ -7,12 +7,10 @@ import (
 	"time"
 
 	"github.com/glebarez/sqlite"
-	logger "github.com/rtfmkiesel/kisslog"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 	glogger "gorm.io/gorm/logger"
 )
-
-var log = logger.New("db")
 
 type Database struct {
 	mu     *sync.Mutex
@@ -31,20 +29,20 @@ func MustOpen() *Database {
 	if !exists {
 		dbPath = "./olim.sqlite" // default path
 	}
-	log.Debug("using sqlite database %s", dbPath)
+	log.Debug().Msgf("using sqlite database %s", dbPath)
 
 	sqliteDatabase, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{
 		Logger: glogger.Default.LogMode(glogger.Silent), // Stops gorms logger
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err)
 	}
-	log.Debug("sqlite databased opened")
+	log.Debug().Msg("sqlite databased opened")
 
 	if err := sqliteDatabase.AutoMigrate(&SecretString{}, &SecretFile{}); err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err)
 	}
-	log.Debug("sqlite database migrated")
+	log.Debug().Msg("sqlite database migrated")
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	db := &Database{
@@ -58,7 +56,7 @@ func MustOpen() *Database {
 	// Periodically remove expired secrets
 	db.startCleanup()
 
-	log.Info("sqlite database ready")
+	log.Info().Msg("sqlite database ready")
 	return db
 }
 
@@ -67,24 +65,24 @@ func (db *Database) Close() {
 	db.stopCleanup()
 	db.wgCleanup.Wait()
 
-	log.Debug("closing sqlite db")
+	log.Debug().Msg("closing sqlite db")
 	database, err := db.sqlite.DB()
 	if err != nil {
-		log.Error(err)
+		log.Error().Err(err)
 		return
 	}
 
 	if err := database.Close(); err != nil {
-		log.Error(err)
+		log.Error().Err(err)
 		return
 	}
 
-	log.Info("sqlite database closed")
+	log.Info().Msg("sqlite database closed")
 }
 
 // Removes expired secrets based on model from the database
 func (db *Database) startCleanup() {
-	log.Debug("starting cleanup task for expired secrets")
+	log.Debug().Msg("starting cleanup task for expired secrets")
 
 	deleteExpiredSecrets := func(model any, name string) {
 		db.mu.Lock()
@@ -94,9 +92,9 @@ func (db *Database) startCleanup() {
 			Limit(1000).
 			Delete(model)
 		if res.Error != nil {
-			log.Error("failed to delete expired %s: %s", name, res.Error)
+			log.Error().Msgf("failed to delete expired %s: %s", name, res.Error)
 		} else if res.RowsAffected > 0 {
-			log.Info("deleted %d expired %s", res.RowsAffected, name)
+			log.Info().Msgf("deleted %d expired %s", res.RowsAffected, name)
 		}
 	}
 
@@ -107,10 +105,10 @@ func (db *Database) startCleanup() {
 		for {
 			select {
 			case <-db.ctxCleanup.Done():
-				log.Debug("stopping cleanup task")
+				log.Debug().Msg("stopping cleanup task")
 				return
 			case <-ticker.C:
-				log.Debug("checking for expired secrets")
+				log.Debug().Msg("checking for expired secrets")
 				deleteExpiredSecrets(&SecretString{}, "strings")
 				deleteExpiredSecrets(&SecretFile{}, "files")
 			}

@@ -5,20 +5,19 @@ import (
 	"os/signal"
 	"syscall"
 
-	logger "github.com/rtfmkiesel/kisslog"
+	"github.com/rs/zerolog"
 
 	"github.com/cyllective/olim/internal/app"
 )
 
-var version = "@DEV"
-
 func main() {
-	if err := logger.InitDefault("github.com/cyllective/olim" + version); err != nil {
-		panic(err)
-	}
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
 	_, debug := os.LookupEnv("DEBUG")
-	logger.FlagDebug = debug
+	if debug {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	}
 
 	app.Start()
 	defer app.Stop()

@@ -10,7 +10,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	logger "github.com/rtfmkiesel/kisslog"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/time/rate"
 
 	"github.com/cyllective/olim/internal/db"
@@ -25,7 +25,6 @@ var (
 
 	httpServer *http.Server
 	database   *db.Database
-	log        = logger.New("app")
 )
 
 const (
@@ -56,7 +55,7 @@ func Start() {
 	// Golang template for the HTML pages
 	templ, err := template.New("").ParseFS(embedFSTemplates, "templates/*.tmpl")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err)
 	}
 	e.Renderer = &echo.TemplateRenderer{Template: templ}
 
@@ -84,25 +83,25 @@ func Start() {
 	}
 
 	go func() {
-		log.Info("starting http server on %s", addr)
+		log.Info().Msgf("starting http server on %s", addr)
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatal(err)
+			log.Fatal().Err(err)
 		}
 	}()
 }
 
 // Stops the app
 func Stop() {
-	log.Debug("shutting down http server")
+	log.Debug().Msg("shutting down http server")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := httpServer.Shutdown(ctx); err != nil {
-		log.Error(err)
+		log.Error().Err(err)
 		return
 	}
 
-	log.Info("http server stopped")
+	log.Info().Msg("http server stopped")
 
 	database.Close()
 }
