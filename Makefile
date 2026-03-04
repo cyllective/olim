@@ -2,7 +2,6 @@
 make:
 	CGO_ENABLED=0 GOOS=linux \
 	go build \
-		-buildmode=pie \
 		-ldflags="-s -w" \
 		-o ./olim ./main.go
 

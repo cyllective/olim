@@ -24,7 +24,7 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
 	--mount=type=cache,target="/root/.cache/go-build" \
 	make
 
-RUN /tmp/upx --no-color -q --best -o /src/bin/olim /src/olim
+RUN /tmp/upx --no-color -q --ultra-brute -9 -o /src/bin/olim /src/olim
 
 FROM alpine:latest
 
